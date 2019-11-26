@@ -45,6 +45,8 @@ import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.remoting.exception.RemotingException;
 
 /**
+ * 默认的PUSH模式的消费者
+ *
  * In most scenarios, this is the mostly recommended class to consume messages.
  * </p>
  *

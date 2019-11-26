@@ -27,6 +27,10 @@ import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.logging.InternalLogger;
 
 /**
+ * 一种基于机房近端优先级的分配策略
+ *
+ * 即如果消费者在一个机房，消息队列也部署在同一个机房。那么消费者应该优先分配给它。
+ *
  * An allocate strategy proxy for based on machine room nearside priority. An actual allocate strategy can be
  * specified.
  *

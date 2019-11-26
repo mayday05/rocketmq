@@ -28,7 +28,9 @@ public enum MessageModel {
      * broadcast
      */
     BROADCASTING("BROADCASTING"),
+
     /**
+     * 默认模式为集群模式
      * clustering
      */
     CLUSTERING("CLUSTERING");

@@ -19,6 +19,9 @@ package org.apache.rocketmq.client.common;
 
 import java.util.Random;
 
+/**
+ * LatencyFaultToleranceImpl特性使用的
+ */
 public class ThreadLocalIndex {
     private final ThreadLocal<Integer> threadLocalIndex = new ThreadLocal<Integer>();
     private final Random random = new Random();

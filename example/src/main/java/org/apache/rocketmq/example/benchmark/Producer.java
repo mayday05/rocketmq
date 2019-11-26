@@ -110,6 +110,11 @@ public class Producer {
 
         producer.setCompressMsgBodyOverHowmuch(Integer.MAX_VALUE);
 
+        /**
+         * mayday
+         */
+        producer.setNamesrvAddr("127.0.0.1:9876"); // <x> 哈哈哈哈
+
         producer.start();
 
         for (int i = 0; i < threadCount; i++) {

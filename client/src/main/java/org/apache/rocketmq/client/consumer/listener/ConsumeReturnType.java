@@ -24,6 +24,7 @@ public enum ConsumeReturnType {
     SUCCESS,
     /**
      * consume timeout ,even if success
+     * 尽快成功了，但是超时了
      */
     TIME_OUT,
     /**

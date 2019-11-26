@@ -65,6 +65,10 @@ public class Consumer {
 
         final LinkedList<Long[]> snapshotList = new LinkedList<Long[]>();
 
+        /**
+         * 每隔一秒去获取一次性能数据快照，并保存到队列中
+         * 如果队列超过十个，删除最前面的那个
+         */
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -75,6 +79,14 @@ public class Consumer {
             }
         }, 1000, 1000);
 
+        /**
+         * 每隔十秒，打印状态
+         *
+         * 如果采样快照大于十个，计算消费TPS=每秒消费个数
+         * 平均B2C RT=
+         * 平均S2C RT
+         *
+         */
         timer.scheduleAtFixedRate(new TimerTask() {
             private void printStats() {
                 if (snapshotList.size() >= 10) {
@@ -86,7 +98,11 @@ public class Consumer {
                     final double averageB2CRT = (end[2] - begin[2]) / (double) (end[1] - begin[1]);
                     final double averageS2CRT = (end[3] - begin[3]) / (double) (end[1] - begin[1]);
 
-                    System.out.printf("Consume TPS: %d Average(B2C) RT: %7.3f Average(S2C) RT: %7.3f MAX(B2C) RT: %d MAX(S2C) RT: %d%n",
+                    System.out.printf("Consume TPS: %d -----------" +
+                                    "Average(B2C) RT: %7.3f----------- " +
+                                    "Average(S2C) RT: %7.3f -----------" +
+                                    "MAX(B2C) RT: %d -----------" +
+                                    "MAX(S2C) RT: %d%n -----------",
                         consumeTps, averageB2CRT, averageS2CRT, end[4], end[5]
                     );
                 }
@@ -121,6 +137,11 @@ public class Consumer {
             }
         }
 
+        /**
+         * mayday test
+         */
+        consumer.setNamesrvAddr("127.0.0.1:9876"); // <x> 哈哈哈哈
+
         consumer.registerMessageListener(new MessageListenerConcurrently() {
             @Override
             public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> msgs,
@@ -128,18 +149,29 @@ public class Consumer {
                 MessageExt msg = msgs.get(0);
                 long now = System.currentTimeMillis();
 
+                // 接受到消息总数增加
                 statsBenchmarkConsumer.getReceiveMessageTotalCount().incrementAndGet();
 
+                // 消息从生产端到达消费端花费时间
                 long born2ConsumerRT = now - msg.getBornTimestamp();
                 statsBenchmarkConsumer.getBorn2ConsumerTotalRT().addAndGet(born2ConsumerRT);
 
+                // 消息从存储broker到消费端花费时间
                 long store2ConsumerRT = now - msg.getStoreTimestamp();
                 statsBenchmarkConsumer.getStore2ConsumerTotalRT().addAndGet(store2ConsumerRT);
 
+                // 消息 最大B2C时间
                 compareAndSetMax(statsBenchmarkConsumer.getBorn2ConsumerMaxRT(), born2ConsumerRT);
 
+                // 消息 最大S2C时间
                 compareAndSetMax(statsBenchmarkConsumer.getStore2ConsumerMaxRT(), store2ConsumerRT);
 
+                System.out.println("Receiver msg  ==============" + msg);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
             }
         });
@@ -196,14 +228,24 @@ class StatsBenchmarkConsumer {
 
     private final AtomicLong store2ConsumerMaxRT = new AtomicLong(0L);
 
+    /**
+     * snap[0]--接受消息总数
+     * snap[1]--消息
+     * snap[2]--消息
+     *
+     * snap[3]--消息
+     * snap[4]--
+     * @return 记录
+     */
     public Long[] createSnapshot() {
-        Long[] snap = new Long[] {
-            System.currentTimeMillis(),
-            this.receiveMessageTotalCount.get(),
-            this.born2ConsumerTotalRT.get(),
-            this.store2ConsumerTotalRT.get(),
-            this.born2ConsumerMaxRT.get(),
-            this.store2ConsumerMaxRT.get(),
+        Long[] snap = new Long[]{
+                System.currentTimeMillis(),
+                this.receiveMessageTotalCount.get(),
+                this.born2ConsumerTotalRT.get(),
+                this.store2ConsumerTotalRT.get(),
+
+                this.born2ConsumerMaxRT.get(),
+                this.store2ConsumerMaxRT.get(),
         };
 
         return snap;
