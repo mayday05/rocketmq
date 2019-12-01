@@ -44,8 +44,8 @@ public interface RemotingServer extends RemotingService {
         final InvokeCallback invokeCallback) throws InterruptedException,
         RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException;
 
-    void invokeOneway(final Channel channel, final RemotingCommand request, final long timeoutMillis)
-        throws InterruptedException, RemotingTooMuchRequestException, RemotingTimeoutException,
-        RemotingSendRequestException;
 
+    void invokeOneway(final Channel channel, final RemotingCommand request, final long timeoutMillis)
+            throws InterruptedException, RemotingTooMuchRequestException, RemotingTimeoutException,
+            RemotingSendRequestException;
 }

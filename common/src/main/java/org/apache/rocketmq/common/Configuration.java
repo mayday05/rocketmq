@@ -99,6 +99,9 @@ public class Configuration {
         }
 
         try {
+            /**
+             * 使用写锁，且允许中断
+             */
             readWriteLock.writeLock().lockInterruptibly();
 
             try {

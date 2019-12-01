@@ -27,17 +27,41 @@ import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+/**
+ * 该类作用
+ *
+ */
 public class RebalanceLockManager {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.REBALANCE_LOCK_LOGGER_NAME);
+    /**
+     * 最大存活时间 60 秒
+     */
     private final static long REBALANCE_LOCK_MAX_LIVE_TIME = Long.parseLong(System.getProperty(
         "rocketmq.broker.rebalance.lockMaxLiveTime", "60000"));
+
     private final Lock lock = new ReentrantLock();
+
+    /**
+     * 保存锁的HashMap---key：groupName, value: HashMap(key:mq, value: lockEntry)
+     *
+     */
     private final ConcurrentMap<String/* group */, ConcurrentHashMap<MessageQueue, LockEntry>> mqLockTable =
         new ConcurrentHashMap<String, ConcurrentHashMap<MessageQueue, LockEntry>>(1024);
 
+    /**
+     * 尝试获取锁, 单个
+     *
+     * @param group
+     * @param mq
+     * @param clientId
+     * @return
+     */
     public boolean tryLock(final String group, final MessageQueue mq, final String clientId) {
 
         if (!this.isLocked(group, mq, clientId)) {
+            /**
+             * 如果没有被其他人锁住
+             */
             try {
                 this.lock.lockInterruptibly();
                 try {
@@ -62,7 +86,9 @@ public class RebalanceLockManager {
                         lockEntry.setLastUpdateTimestamp(System.currentTimeMillis());
                         return true;
                     }
-
+                    /**
+                     * 否则
+                     */
                     String oldClientId = lockEntry.getClientId();
 
                     if (lockEntry.isExpired()) {
@@ -97,13 +123,30 @@ public class RebalanceLockManager {
         return true;
     }
 
+    /**
+     * 判断指定group，指定mq队列，指定clientId是否正在被锁住了
+     *
+     * @param group
+     * @param mq
+     * @param clientId
+     * @return true标志正在锁住状态
+     */
     private boolean isLocked(final String group, final MessageQueue mq, final String clientId) {
+        /**
+         * 获取该group对应的HashMap
+         */
         ConcurrentHashMap<MessageQueue, LockEntry> groupValue = this.mqLockTable.get(group);
         if (groupValue != null) {
+            /**
+             * 获取该mq对应的锁实体
+             */
             LockEntry lockEntry = groupValue.get(mq);
             if (lockEntry != null) {
                 boolean locked = lockEntry.isLocked(clientId);
                 if (locked) {
+                    /**
+                     * 如果正在锁住，续租
+                     */
                     lockEntry.setLastUpdateTimestamp(System.currentTimeMillis());
                 }
 
@@ -114,6 +157,14 @@ public class RebalanceLockManager {
         return false;
     }
 
+    /**
+     * 批量Lock
+     *
+     * @param group
+     * @param mqs
+     * @param clientId
+     * @return
+     */
     public Set<MessageQueue> tryLockBatch(final String group, final Set<MessageQueue> mqs,
         final String clientId) {
         Set<MessageQueue> lockedMqs = new HashSet<MessageQueue>(mqs.size());
@@ -231,6 +282,9 @@ public class RebalanceLockManager {
         }
     }
 
+    /**
+     * 静态内部类-----用来保存指定client的锁信息
+     */
     static class LockEntry {
         private String clientId;
         private volatile long lastUpdateTimestamp = System.currentTimeMillis();
@@ -251,11 +305,24 @@ public class RebalanceLockManager {
             this.lastUpdateTimestamp = lastUpdateTimestamp;
         }
 
+        /**
+         * 判断是否锁住
+         *
+         * @param clientId
+         * @return
+         */
         public boolean isLocked(final String clientId) {
             boolean eq = this.clientId.equals(clientId);
+            /**
+             * 如果clientId相同，且没有过期
+             */
             return eq && !this.isExpired();
         }
 
+        /**
+         * 过期
+         * @return
+         */
         public boolean isExpired() {
             boolean expired =
                 (System.currentTimeMillis() - this.lastUpdateTimestamp) > REBALANCE_LOCK_MAX_LIVE_TIME;

@@ -48,16 +48,33 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.rocketmq.remoting.netty.TlsSystemConfig.TLS_ENABLE;
 
+/**
+ * Broker启动类
+ */
 public class BrokerStartup {
     public static Properties properties = null;
     public static CommandLine commandLine = null;
     public static String configFile = null;
     public static InternalLogger log;
 
+    /**
+     * main函数
+     * @param args
+     */
     public static void main(String[] args) {
+        /**
+         * 先创建和初始化核心Controller
+         * 在正式启动Broker
+         */
         start(createBrokerController(args));
     }
 
+    /**
+     * 启动核心控制器
+     *
+     * @param controller
+     * @return
+     */
     public static BrokerController start(BrokerController controller) {
         try {
 
@@ -87,6 +104,12 @@ public class BrokerStartup {
         }
     }
 
+    /**
+     * 创建Broker Controller
+     *
+     * @param args 为JAVA_OPS参数
+     * @return
+     */
     public static BrokerController createBrokerController(String[] args) {
         System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION));
 
@@ -101,6 +124,9 @@ public class BrokerStartup {
         try {
             //PackageConflictDetect.detectFastjson();
             Options options = ServerUtil.buildCommandlineOptions(new Options());
+            /**
+             * 解析命令行
+             */
             commandLine = ServerUtil.parseCmdLine("mqbroker", args, buildCommandlineOptions(options),
                 new PosixParser());
             if (null == commandLine) {
@@ -113,7 +139,14 @@ public class BrokerStartup {
 
             nettyClientConfig.setUseTLS(Boolean.parseBoolean(System.getProperty(TLS_ENABLE,
                 String.valueOf(TlsSystemConfig.tlsMode == TlsMode.ENFORCING))));
+            /**
+             * server监听端口--10911
+             */
             nettyServerConfig.setListenPort(10911);
+
+            /**
+             * 初始化msg存储配置
+             */
             final MessageStoreConfig messageStoreConfig = new MessageStoreConfig();
 
             if (BrokerRole.SLAVE == messageStoreConfig.getBrokerRole()) {
@@ -130,6 +163,9 @@ public class BrokerStartup {
                     properties.load(in);
 
                     properties2SystemEnv(properties);
+                    /**
+                     * 赋值所有属性文件的config
+                     */
                     MixAll.properties2Object(properties, brokerConfig);
                     MixAll.properties2Object(properties, nettyServerConfig);
                     MixAll.properties2Object(properties, nettyClientConfig);
@@ -151,6 +187,9 @@ public class BrokerStartup {
             if (null != namesrvAddr) {
                 try {
                     String[] addrArray = namesrvAddr.split(";");
+                    /**
+                     * 校验nameSrv的格式是否为ip:port格式
+                     */
                     for (String addr : addrArray) {
                         RemotingUtil.string2SocketAddress(addr);
                     }
@@ -163,10 +202,16 @@ public class BrokerStartup {
             }
 
             switch (messageStoreConfig.getBrokerRole()) {
+                /**
+                 * 异步刷盘或者同步刷盘的主角色时： 设置BrokerId为代表master的0
+                 */
                 case ASYNC_MASTER:
                 case SYNC_MASTER:
                     brokerConfig.setBrokerId(MixAll.MASTER_ID);
                     break;
+                /**
+                 * 其他备角色
+                 */
                 case SLAVE:
                     if (brokerConfig.getBrokerId() <= 0) {
                         System.out.printf("Slave's brokerId must be > 0");
@@ -177,7 +222,9 @@ public class BrokerStartup {
                 default:
                     break;
             }
-
+            /**
+             * Msg存储监听端口为 10912
+             */
             messageStoreConfig.setHaListenPort(nettyServerConfig.getListenPort() + 1);
             LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
             JoranConfigurator configurator = new JoranConfigurator();
@@ -207,16 +254,28 @@ public class BrokerStartup {
             MixAll.printObjectProperties(log, nettyClientConfig);
             MixAll.printObjectProperties(log, messageStoreConfig);
 
+            /**
+             * 初始化核心控制器
+             */
             final BrokerController controller = new BrokerController(
                 brokerConfig,
                 nettyServerConfig,
                 nettyClientConfig,
                 messageStoreConfig);
             // remember all configs to prevent discard
+            /**
+             * merge所有属性文件
+             */
             controller.getConfiguration().registerConfig(properties);
 
+            /**
+             * brokerController执行初始化逻辑
+             */
             boolean initResult = controller.initialize();
             if (!initResult) {
+                /**
+                 * 执行失败后，shutdown并跳出
+                 */
                 controller.shutdown();
                 System.exit(-3);
             }

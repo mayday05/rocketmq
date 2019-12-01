@@ -117,6 +117,9 @@ import org.apache.rocketmq.store.MessageFilter;
 import org.apache.rocketmq.store.MessageStore;
 import org.apache.rocketmq.store.SelectMappedBufferResult;
 
+/**
+ * admin broker 核心处理类
+ */
 public class AdminBrokerProcessor implements NettyRequestProcessor {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final BrokerController brokerController;
@@ -125,6 +128,14 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
         this.brokerController = brokerController;
     }
 
+    /**
+     * 对应请求处理
+     *
+     * @param ctx
+     * @param request
+     * @return
+     * @throws RemotingCommandException
+     */
     @Override
     public RemotingCommand processRequest(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
@@ -149,6 +160,9 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
                 return this.getEarliestMsgStoretime(ctx, request);
             case RequestCode.GET_BROKER_RUNTIME_INFO:
                 return this.getBrokerRuntimeInfo(ctx, request);
+            /**
+             * 批量锁MQ
+             */
             case RequestCode.LOCK_BATCH_MQ:
                 return this.lockBatchMQ(ctx, request);
             case RequestCode.UNLOCK_BATCH_MQ:
@@ -437,6 +451,14 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /**
+     * 批量锁队列
+     *
+     * @param ctx
+     * @param request
+     * @return
+     * @throws RemotingCommandException
+     */
     private RemotingCommand lockBatchMQ(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -810,6 +832,14 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
             requestHeader.getTimestamp(), requestHeader.isForce(), isC);
     }
 
+    /**
+     * 获取消费状态
+     *
+     * @param ctx
+     * @param request
+     * @return
+     * @throws RemotingCommandException
+     */
     public RemotingCommand getConsumerStatus(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final GetConsumerStatusRequestHeader requestHeader =
