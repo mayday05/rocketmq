@@ -54,6 +54,9 @@ import org.apache.rocketmq.remoting.exception.RemotingException;
 import org.apache.rocketmq.remoting.netty.ResponseFuture;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * MQ 顶层实现
+ */
 public class MQAdminImpl {
 
     private final InternalLogger log = ClientLogger.getLog();
@@ -76,6 +79,15 @@ public class MQAdminImpl {
         createTopic(key, newTopic, queueNum, 0);
     }
 
+    /**
+     * 创建Topic
+     *
+     * @param key
+     * @param newTopic
+     * @param queueNum
+     * @param topicSysFlag
+     * @throws MQClientException
+     */
     public void createTopic(String key, String newTopic, int queueNum, int topicSysFlag) throws MQClientException {
         try {
             TopicRouteData topicRouteData = this.mQClientFactory.getMQClientAPIImpl().getTopicRouteInfoFromNameServer(key, timeoutMillis);
@@ -130,6 +142,13 @@ public class MQAdminImpl {
         }
     }
 
+    /**
+     * 拉取发布消息队列
+     *
+     * @param topic
+     * @return
+     * @throws MQClientException
+     */
     public List<MessageQueue> fetchPublishMessageQueues(String topic) throws MQClientException {
         try {
             TopicRouteData topicRouteData = this.mQClientFactory.getMQClientAPIImpl().getTopicRouteInfoFromNameServer(topic, timeoutMillis);

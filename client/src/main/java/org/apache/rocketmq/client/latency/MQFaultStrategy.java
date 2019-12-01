@@ -22,8 +22,15 @@ import org.apache.rocketmq.client.log.ClientLogger;
 import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+/**
+ * MQ 故障策略
+ */
 public class MQFaultStrategy {
     private final static InternalLogger log = ClientLogger.getLog();
+
+    /**
+     * 延迟故障策略
+     */
     private final LatencyFaultTolerance<String> latencyFaultTolerance = new LatencyFaultToleranceImpl();
 
     private boolean sendLatencyFaultEnable = false;
@@ -56,23 +63,38 @@ public class MQFaultStrategy {
     }
 
     public MessageQueue selectOneMessageQueue(final TopicPublishInfo tpInfo, final String lastBrokerName) {
+        /**
+         * 如果开启了--发送延迟故障  开关
+         */
         if (this.sendLatencyFaultEnable) {
             try {
                 int index = tpInfo.getSendWhichQueue().getAndIncrement();
+                /**
+                 *  计算
+                 */
                 for (int i = 0; i < tpInfo.getMessageQueueList().size(); i++) {
                     int pos = Math.abs(index++) % tpInfo.getMessageQueueList().size();
                     if (pos < 0)
                         pos = 0;
                     MessageQueue mq = tpInfo.getMessageQueueList().get(pos);
                     if (latencyFaultTolerance.isAvailable(mq.getBrokerName())) {
+                        /**
+                         * 如果未指定broker或者指定了broker和当前所选的MQ队列的broker相同，返回该MQ队列
+                         */
                         if (null == lastBrokerName || mq.getBrokerName().equals(lastBrokerName))
                             return mq;
                     }
                 }
 
+                /**
+                 * 如果上述没有找到合适的队列
+                 */
                 final String notBestBroker = latencyFaultTolerance.pickOneAtLeast();
                 int writeQueueNums = tpInfo.getQueueIdByBroker(notBestBroker);
                 if (writeQueueNums > 0) {
+                    /**
+                     * 从tpInfo中hash选择一个队列，赋予broker和queueId
+                     */
                     final MessageQueue mq = tpInfo.selectOneMessageQueue();
                     if (notBestBroker != null) {
                         mq.setBrokerName(notBestBroker);

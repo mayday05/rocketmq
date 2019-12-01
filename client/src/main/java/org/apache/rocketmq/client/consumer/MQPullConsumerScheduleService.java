@@ -31,6 +31,8 @@ import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
 
 /**
+ * pull类型消费者调度服务
+ *
  * Schedule service for pull consumer
  */
 public class MQPullConsumerScheduleService {

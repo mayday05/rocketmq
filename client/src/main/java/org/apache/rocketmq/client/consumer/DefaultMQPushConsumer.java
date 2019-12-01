@@ -45,7 +45,10 @@ import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.remoting.exception.RemotingException;
 
 /**
- * 默认的PUSH模式的消费者
+ * 默认的PUSH模式的消费者---大多数情况下，推荐使用该模式
+ *
+ * 从计划上来讲，PUSH客户端是基于PULL的封装。
+ * 特殊的，
  *
  * In most scenarios, this is the mostly recommended class to consume messages.
  * </p>
@@ -80,6 +83,8 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
     private String consumerGroup;
 
     /**
+     *
+     * 消息消费模型：集群还是广播
      * Message model defines the way how messages are delivered to each consumer clients.
      * </p>
      *
@@ -94,6 +99,11 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
     private MessageModel messageModel = MessageModel.CLUSTERING;
 
     /**
+     * 消费端消费顺序，六种重废弃了三种，还有三种模式
+     * 1、 第一个
+     * 2、 最后一个
+     * 3、 时间戳
+     *
      * Consuming point on consumer booting.
      * </p>
      *
@@ -135,11 +145,15 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
     private String consumeTimestamp = UtilAll.timeMillisToHumanString3(System.currentTimeMillis() - (1000 * 60 * 30));
 
     /**
+     * 消费队列策略
+     *
      * Queue allocation algorithm specifying how message queues are allocated to each consumer clients.
      */
     private AllocateMessageQueueStrategy allocateMessageQueueStrategy;
 
     /**
+     * 注册关系表
+     *
      * Subscription relationship
      */
     private Map<String /* topic */, String /* sub expression */> subscription = new HashMap<String, String>();
@@ -217,16 +231,21 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
     private long pullInterval = 0;
 
     /**
+     * 批量消费默认大小
+     *
      * Batch consumption size
      */
     private int consumeMessageBatchMaxSize = 1;
 
     /**
+     * 批量拉取默认大小 32
      * Batch pull size
      */
     private int pullBatchSize = 32;
 
     /**
+     * 标志位-是否在每次pull拉取消息时更新注册关系表
+     *
      * Whether update subscription relationship when every pull
      */
     private boolean postSubscriptionWhenPull = false;
@@ -237,6 +256,8 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
     private boolean unitMode = false;
 
     /**
+     * 最大重复消费次数，-1表示16次
+     *
      * Max re-consume times. -1 means 16 times.
      * </p>
      *
@@ -246,6 +267,8 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
     private int maxReconsumeTimes = -1;
 
     /**
+     * 停止拉取时间
+     *
      * Suspending pulling time for cases requiring slow pulling like flow-control scenario.
      */
     private long suspendCurrentQueueTimeMillis = 1000;
@@ -256,11 +279,15 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
     private long consumeTimeout = 15;
 
     /**
+     * 异步传输数据接口
+     *
      * Interface of asynchronous transfer data
      */
     private TraceDispatcher traceDispatcher = null;
 
     /**
+     * 默认构造函数：hook为null，分配策略为平均分配
+     *
      * Default constructor.
      */
     public DefaultMQPushConsumer() {
@@ -268,6 +295,8 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
     }
 
     /**
+     * 指定RPC hook和分配消息队列策略
+     *
      * Constructor specifying consumer group, RPC hook and message queue allocating algorithm.
      *
      * @param consumerGroup Consume queue.
@@ -282,6 +311,8 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
     }
 
     /**
+     * + 是否使能消息追踪 + 消息追踪主题（如果没设置，就使用默认的消息追踪主题）
+     *
      * Constructor specifying consumer group, RPC hook, message queue allocating algorithm, enabled msg trace flag and customized trace topic name.
      *
      * @param consumerGroup Consume queue.
@@ -535,6 +566,8 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
     }
 
     /**
+     * 发送消息回到broker中，未来会再次传送
+     *
      * Send message back to broker which will be re-delivered in future.
      *
      * @param msg Message to send back.

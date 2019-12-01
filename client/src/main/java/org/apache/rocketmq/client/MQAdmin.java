@@ -23,6 +23,8 @@ import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.remoting.exception.RemotingException;
 
 /**
+ * MQ管理 最上层接口
+ *
  * Base interface for MQ management
  */
 public interface MQAdmin {

@@ -46,7 +46,9 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.netty.NettyRequestProcessor;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
-
+/**
+ * 客户端远程通信处理器  --  实现Netty
+ */
 public class ClientRemotingProcessor implements NettyRequestProcessor {
     private final InternalLogger log = ClientLogger.getLog();
     private final MQClientInstance mqClientFactory;
@@ -55,6 +57,14 @@ public class ClientRemotingProcessor implements NettyRequestProcessor {
         this.mqClientFactory = mqClientFactory;
     }
 
+    /**
+     * 处理请求
+     *
+     * @param ctx
+     * @param request
+     * @return
+     * @throws RemotingCommandException
+     */
     @Override
     public RemotingCommand processRequest(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
