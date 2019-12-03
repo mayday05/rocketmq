@@ -62,6 +62,9 @@ import org.apache.rocketmq.remoting.exception.RemotingTimeoutException;
 import org.apache.rocketmq.remoting.exception.RemotingTooMuchRequestException;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * Netty远程服务端
+ */
 public class NettyRemotingServer extends NettyRemotingAbstract implements RemotingServer {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(RemotingHelper.ROCKETMQ_REMOTING);
     private final ServerBootstrap serverBootstrap;

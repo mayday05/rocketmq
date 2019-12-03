@@ -31,16 +31,23 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
 
+/**
+ * RPC命令
+ */
 public class RemotingCommand {
     public static final String SERIALIZE_TYPE_PROPERTY = "rocketmq.serialize.type";
     public static final String SERIALIZE_TYPE_ENV = "ROCKETMQ_SERIALIZE_TYPE";
     public static final String REMOTING_VERSION_KEY = "rocketmq.remoting.version";
     private static final InternalLogger log = InternalLoggerFactory.getLogger(RemotingHelper.ROCKETMQ_REMOTING);
+
+
     private static final int RPC_TYPE = 0; // 0, REQUEST_COMMAND
     private static final int RPC_ONEWAY = 1; // 0, RPC
+
     private static final Map<Class<? extends CommandCustomHeader>, Field[]> CLASS_HASH_MAP =
         new HashMap<Class<? extends CommandCustomHeader>, Field[]>();
     private static final Map<Class, String> CANONICAL_NAME_CACHE = new HashMap<Class, String>();
+
     // 1, Oneway
     // 1, RESPONSE_COMMAND
     private static final Map<Field, Boolean> NULLABLE_FIELD_CACHE = new HashMap<Field, Boolean>();
@@ -73,7 +80,7 @@ public class RemotingCommand {
     private LanguageCode language = LanguageCode.JAVA;
     private int version = 0;
     private int opaque = requestId.getAndIncrement();
-    // 区分是普通RPC还是onewayRPC得标志
+    // 区分是普通RPC还是oneway RPC得标志
     private int flag = 0;
     // 传输自定义文本信息
     private String remark;

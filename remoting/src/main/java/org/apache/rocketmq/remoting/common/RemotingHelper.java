@@ -30,6 +30,9 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
+/**
+ * 远程通信类
+ */
 public class RemotingHelper {
     public static final String ROCKETMQ_REMOTING = "RocketmqRemoting";
     public static final String DEFAULT_CHARSET = "UTF-8";
@@ -58,26 +61,56 @@ public class RemotingHelper {
         return isa;
     }
 
+    /**
+     * 同步调用
+     *
+     * @param addr
+     * @param request
+     * @param timeoutMillis
+     * @return
+     * @throws InterruptedException
+     * @throws RemotingConnectException
+     * @throws RemotingSendRequestException
+     * @throws RemotingTimeoutException
+     */
     public static RemotingCommand invokeSync(final String addr, final RemotingCommand request,
         final long timeoutMillis) throws InterruptedException, RemotingConnectException,
         RemotingSendRequestException, RemotingTimeoutException {
         long beginTime = System.currentTimeMillis();
         SocketAddress socketAddress = RemotingUtil.string2SocketAddress(addr);
+
+        /**
+         * 连接并获取channel
+         */
         SocketChannel socketChannel = RemotingUtil.connect(socketAddress);
         if (socketChannel != null) {
             boolean sendRequestOK = false;
 
             try {
-
+                /**
+                 * 阻塞该channel
+                 */
                 socketChannel.configureBlocking(true);
 
                 //bugfix  http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4614802
+                /**
+                 * 设置超时时间
+                 */
                 socketChannel.socket().setSoTimeout((int) timeoutMillis);
 
                 ByteBuffer byteBufferRequest = request.encode();
                 while (byteBufferRequest.hasRemaining()) {
+                    /**
+                     * 写数据
+                     */
                     int length = socketChannel.write(byteBufferRequest);
                     if (length > 0) {
+                        /**
+                         * 如果写成功，并且还有剩余没写完
+                         * 且当前时间已经超时
+                         *
+                         * 抛出异常
+                         */
                         if (byteBufferRequest.hasRemaining()) {
                             if ((System.currentTimeMillis() - beginTime) > timeoutMillis) {
 
@@ -95,6 +128,9 @@ public class RemotingHelper {
 
                 ByteBuffer byteBufferSize = ByteBuffer.allocate(4);
                 while (byteBufferSize.hasRemaining()) {
+                    /**
+                     * 读数据一直
+                     */
                     int length = socketChannel.read(byteBufferSize);
                     if (length > 0) {
                         if (byteBufferSize.hasRemaining()) {

@@ -16,14 +16,33 @@
  */
 package org.apache.rocketmq.remoting.netty;
 
+/**
+ * netty 客户端配置
+ */
 public class NettyClientConfig {
     /**
-     * Worker thread number
+     * Worker thread number 4
      */
     private int clientWorkerThreads = 4;
+
+    /**
+     * 取系统的可用处理器个数
+     */
     private int clientCallbackExecutorThreads = Runtime.getRuntime().availableProcessors();
+
+    /**
+     * 信号量 65535
+     */
     private int clientOnewaySemaphoreValue = NettySystemConfig.CLIENT_ONEWAY_SEMAPHORE_VALUE;
+
+    /**
+     * 信号量 65535
+     */
     private int clientAsyncSemaphoreValue = NettySystemConfig.CLIENT_ASYNC_SEMAPHORE_VALUE;
+
+    /**
+     * 连接超时时间3秒
+     */
     private int connectTimeoutMillis = 3000;
     private long channelNotActiveInterval = 1000 * 60;
 
