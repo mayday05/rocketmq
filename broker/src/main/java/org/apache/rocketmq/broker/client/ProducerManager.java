@@ -35,14 +35,41 @@ import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.apache.rocketmq.remoting.common.RemotingUtil;
 
+/**
+ * 生产者管理类
+ */
 public class ProducerManager {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
+
+    /**
+     * 锁超时时间3秒
+     */
     private static final long LOCK_TIMEOUT_MILLIS = 3000;
+
+    /**
+     * channel过期时间120秒
+     */
     private static final long CHANNEL_EXPIRED_TIMEOUT = 1000 * 120;
+
+    /**
+     * 获取可用channel重试次数
+     */
     private static final int GET_AVALIABLE_CHANNEL_RETRY_COUNT = 3;
+
+    /**
+     * group变化互斥锁
+     */
     private final Lock groupChannelLock = new ReentrantLock();
+
+    /**
+     * 生产组channel信息表
+     */
     private final HashMap<String /* group name */, HashMap<Channel, ClientChannelInfo>> groupChannelTable =
         new HashMap<String, HashMap<Channel, ClientChannelInfo>>();
+
+    /**
+     * 积极原子计数器
+     */
     private PositiveAtomicCounter positiveAtomicCounter = new PositiveAtomicCounter();
     public ProducerManager() {
     }
@@ -131,6 +158,12 @@ public class ProducerManager {
         }
     }
 
+    /**
+     * 注册生产者
+     *
+     * @param group
+     * @param clientChannelInfo
+     */
     public void registerProducer(final String group, final ClientChannelInfo clientChannelInfo) {
         try {
             ClientChannelInfo clientChannelInfoFound = null;

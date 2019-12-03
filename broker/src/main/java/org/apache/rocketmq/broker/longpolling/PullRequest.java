@@ -21,13 +21,44 @@ import org.apache.rocketmq.common.protocol.heartbeat.SubscriptionData;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.store.MessageFilter;
 
+/**
+ * 拉消息请求
+ */
 public class PullRequest {
+
+    /**
+     * 请求命令
+     */
     private final RemotingCommand requestCommand;
+
+    /**
+     * 客户端channel
+     */
     private final Channel clientChannel;
+
+    /**
+     * 超时时间
+     */
     private final long timeoutMillis;
+
+    /**
+     * suspend时间
+     */
     private final long suspendTimestamp;
+
+    /**
+     * pull起始位置
+     */
     private final long pullFromThisOffset;
+
+    /**
+     * 订阅数据
+     */
     private final SubscriptionData subscriptionData;
+
+    /**
+     * 消息过滤器
+     */
     private final MessageFilter messageFilter;
 
     public PullRequest(RemotingCommand requestCommand, Channel clientChannel, long timeoutMillis, long suspendTimestamp,

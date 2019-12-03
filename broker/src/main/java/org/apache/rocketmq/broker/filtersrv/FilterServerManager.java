@@ -35,8 +35,14 @@ import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.remoting.common.RemotingUtil;
 
+/**
+ * 过滤Server管理器
+ */
 public class FilterServerManager {
 
+    /**
+     * 最大IDLE时间30秒
+     */
     public static final long FILTER_SERVER_MAX_IDLE_TIME_MILLS = 30000;
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final ConcurrentMap<Channel, FilterServerInfo> filterServerTable =
@@ -50,6 +56,9 @@ public class FilterServerManager {
         this.brokerController = brokerController;
     }
 
+    /**
+     * 启动，循环30秒，创建filter server
+     */
     public void start() {
 
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
@@ -64,6 +73,10 @@ public class FilterServerManager {
         }, 1000 * 5, 1000 * 30, TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * 创建Filter server
+     * （使得table中总数和预期的总数相同）
+     */
     public void createFilterServer() {
         int more =
             this.brokerController.getBrokerConfig().getFilterServerNums() - this.filterServerTable.size();
@@ -73,6 +86,11 @@ public class FilterServerManager {
         }
     }
 
+    /**
+     * 使用shell命令创建filter server
+     *
+     * @return
+     */
     private String buildStartCommand() {
         String config = "";
         if (BrokerStartup.configFile != null) {
@@ -98,6 +116,12 @@ public class FilterServerManager {
         this.scheduledExecutorService.shutdown();
     }
 
+    /**
+     * 注册filter server（保存到内存中）
+     *
+     * @param channel
+     * @param filterServerAddr
+     */
     public void registerFilterServer(final Channel channel, final String filterServerAddr) {
         FilterServerInfo filterServerInfo = this.filterServerTable.get(channel);
         if (filterServerInfo != null) {
@@ -144,6 +168,9 @@ public class FilterServerManager {
         return addr;
     }
 
+    /**
+     * 静态内部类-保存server信息
+     */
     static class FilterServerInfo {
         private String filterServerAddr;
         private long lastUpdateTimestamp;

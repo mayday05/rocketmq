@@ -30,6 +30,8 @@ import java.util.Iterator;
 
 /**
  * Calculate bit map of filter.
+ *
+ * 计算过滤器的位图
  */
 public class CommitLogDispatcherCalcBitMap implements CommitLogDispatcher {
 
@@ -43,6 +45,11 @@ public class CommitLogDispatcherCalcBitMap implements CommitLogDispatcher {
         this.consumerFilterManager = consumerFilterManager;
     }
 
+    /**
+     * 分发
+     *
+     * @param request
+     */
     @Override
     public void dispatch(DispatchRequest request) {
         if (!this.brokerConfig.isEnableCalcFilterBitMap()) {

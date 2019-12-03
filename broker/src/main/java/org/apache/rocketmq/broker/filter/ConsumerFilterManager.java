@@ -101,6 +101,12 @@ public class ConsumerFilterManager extends ConfigManager {
         return consumerFilterData;
     }
 
+    /**
+     * 注册
+     *
+     * @param consumerGroup
+     * @param subList
+     */
     public void register(final String consumerGroup, final Collection<SubscriptionData> subList) {
         for (SubscriptionData subscriptionData : subList) {
             register(

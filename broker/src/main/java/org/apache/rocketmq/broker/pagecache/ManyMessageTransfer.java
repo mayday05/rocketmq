@@ -24,6 +24,9 @@ import java.nio.channels.WritableByteChannel;
 import java.util.List;
 import org.apache.rocketmq.store.GetMessageResult;
 
+/**
+ * for page cache
+ */
 public class ManyMessageTransfer extends AbstractReferenceCounted implements FileRegion {
     private final ByteBuffer byteBufferHeader;
     private final GetMessageResult getMessageResult;

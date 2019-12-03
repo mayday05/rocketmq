@@ -24,6 +24,9 @@ import java.util.List;
 import org.apache.rocketmq.broker.BrokerController;
 import org.apache.rocketmq.common.protocol.heartbeat.SubscriptionData;
 
+/**
+ * 默认的消费ID变化鉴定类
+ */
 public class DefaultConsumerIdsChangeListener implements ConsumerIdsChangeListener {
     private final BrokerController brokerController;
 
@@ -37,6 +40,9 @@ public class DefaultConsumerIdsChangeListener implements ConsumerIdsChangeListen
             return;
         }
         switch (event) {
+            /**
+             * 变化
+             */
             case CHANGE:
                 if (args == null || args.length < 1) {
                     return;
@@ -48,9 +54,15 @@ public class DefaultConsumerIdsChangeListener implements ConsumerIdsChangeListen
                     }
                 }
                 break;
+            /**
+             * 解除注册
+             */
             case UNREGISTER:
                 this.brokerController.getConsumerFilterManager().unRegister(group);
                 break;
+            /**
+             * 注册
+             */
             case REGISTER:
                 if (args == null || args.length < 1) {
                     return;

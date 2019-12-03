@@ -22,14 +22,32 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
 
+/**
+ * MQ线程服务
+ */
 public abstract class ServiceThread implements Runnable {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
 
+    /**
+     * JOIN时间 90秒
+     */
     private static final long JOIN_TIME = 90 * 1000;
 
     protected final Thread thread;
+
+    /**
+     * 计数器
+     */
     protected final CountDownLatch2 waitPoint = new CountDownLatch2(1);
+
+    /**
+     * 原子标志位
+     */
     protected volatile AtomicBoolean hasNotified = new AtomicBoolean(false);
+
+    /**
+     * 标志位 volatile
+     */
     protected volatile boolean stopped = false;
 
     public ServiceThread() {
@@ -43,9 +61,17 @@ public abstract class ServiceThread implements Runnable {
     }
 
     public void shutdown() {
+        /**
+         * 默认false
+         */
         this.shutdown(false);
     }
 
+    /**
+     * 为了增加特殊处理
+     *
+     * @param interrupt
+     */
     public void shutdown(final boolean interrupt) {
         this.stopped = true;
         log.info("shutdown thread " + this.getServiceName() + " interrupt " + interrupt);
@@ -79,6 +105,11 @@ public abstract class ServiceThread implements Runnable {
         this.stop(false);
     }
 
+    /**
+     * 停止
+     *
+     * @param interrupt
+     */
     public void stop(final boolean interrupt) {
         this.stopped = true;
         log.info("stop thread " + this.getServiceName() + " interrupt " + interrupt);
@@ -103,6 +134,11 @@ public abstract class ServiceThread implements Runnable {
         }
     }
 
+    /**
+     * 等待指定间隔
+     *
+     * @param interval
+     */
     protected void waitForRunning(long interval) {
         if (hasNotified.compareAndSet(true, false)) {
             this.onWaitEnd();

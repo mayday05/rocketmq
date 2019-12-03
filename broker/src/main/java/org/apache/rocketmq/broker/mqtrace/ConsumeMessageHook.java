@@ -16,6 +16,10 @@
  */
 package org.apache.rocketmq.broker.mqtrace;
 
+
+/**消息追踪类之 消费消息Hook
+ *
+ */
 public interface ConsumeMessageHook {
     String hookName();
 

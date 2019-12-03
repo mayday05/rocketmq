@@ -29,6 +29,8 @@ import org.apache.rocketmq.remoting.netty.RequestTask;
 import org.apache.rocketmq.remoting.protocol.RemotingSysResponseCode;
 
 /**
+ * Broker快速失败
+ *
  * BrokerFastFailure will cover {@link BrokerController#sendThreadPoolQueue} and
  * {@link BrokerController#pullThreadPoolQueue}
  */
@@ -55,26 +57,50 @@ public class BrokerFastFailure {
         return null;
     }
 
+    /**
+     * 启动类
+     *
+     * 循环10毫秒间隔，如果broker快速失败开关打开的话，清除过期请求。
+     */
     public void start() {
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
                 if (brokerController.getBrokerConfig().isBrokerFastFailureEnable()) {
+                    /**
+                     * 清除
+                     */
                     cleanExpiredRequest();
                 }
             }
         }, 1000, 10, TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * 清除
+     *
+     */
     private void cleanExpiredRequest() {
+        /**
+         * 如果操作系统pageCache正在繁忙
+         */
         while (this.brokerController.getMessageStore().isOSPageCacheBusy()) {
             try {
+                /**
+                 * 如果发送线程队列不为空
+                 */
                 if (!this.brokerController.getSendThreadPoolQueue().isEmpty()) {
+                    /**
+                     * 获取队列第一个
+                     */
                     final Runnable runnable = this.brokerController.getSendThreadPoolQueue().poll(0, TimeUnit.SECONDS);
                     if (null == runnable) {
                         break;
                     }
 
+                    /**
+                     * 消费
+                     */
                     final RequestTask rt = castRunnable(runnable);
                     rt.returnResponse(RemotingSysResponseCode.SYSTEM_BUSY, String.format("[PCBUSY_CLEAN_QUEUE]broker busy, start flow control for a while, period in queue: %sms, size of queue: %d", System.currentTimeMillis() - rt.getCreateTimestamp(), this.brokerController.getSendThreadPoolQueue().size()));
                 } else {
@@ -84,6 +110,9 @@ public class BrokerFastFailure {
             }
         }
 
+        /**
+         * 分别清除发送、pull、心跳、结束事务线程队列内容
+         */
         cleanExpiredRequestInQueue(this.brokerController.getSendThreadPoolQueue(),
             this.brokerController.getBrokerConfig().getWaitTimeMillsInSendQueue());
 
@@ -97,6 +126,12 @@ public class BrokerFastFailure {
             .brokerController.getBrokerConfig().getWaitTimeMillsInTransactionQueue());
     }
 
+    /**
+     *
+     *
+     * @param blockingQueue
+     * @param maxWaitTimeMillsInQueue
+     */
     void cleanExpiredRequestInQueue(final BlockingQueue<Runnable> blockingQueue, final long maxWaitTimeMillsInQueue) {
         while (true) {
             try {

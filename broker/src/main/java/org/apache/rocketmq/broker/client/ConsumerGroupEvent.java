@@ -16,6 +16,9 @@
  */
 package org.apache.rocketmq.broker.client;
 
+/**
+ * 消费组时间类型三种
+ */
 public enum ConsumerGroupEvent {
 
     /**

@@ -27,6 +27,8 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 /**
+ * 重试消息过滤器
+ *
  * Support filter to retry topic.
  * <br>It will decode properties first in order to get real topic.
  */

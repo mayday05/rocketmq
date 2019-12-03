@@ -19,6 +19,9 @@ package org.apache.rocketmq.broker.mqtrace;
 import java.util.Map;
 import org.apache.rocketmq.store.stats.BrokerStatsManager;
 
+/**
+ * 消息追踪类之 消费消息上下文
+ */
 public class ConsumeMessageContext {
     private String consumerGroup;
     private String topic;

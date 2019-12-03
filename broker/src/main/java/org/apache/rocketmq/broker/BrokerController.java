@@ -409,10 +409,16 @@ public class BrokerController {
                 }
             }, 1000 * 10, 1000 * 60, TimeUnit.MILLISECONDS);
 
+            /**
+             * 更新Broker的nameSrv列表
+             */
             if (this.brokerConfig.getNamesrvAddr() != null) {
                 this.brokerOuterAPI.updateNameServerAddressList(this.brokerConfig.getNamesrvAddr());
                 log.info("Set user specified name server address: {}", this.brokerConfig.getNamesrvAddr());
             } else if (this.brokerConfig.isFetchNamesrvAddrByAddressServer()) {
+                /**
+                 * 循环2分钟拉取一次
+                 */
                 this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
                     @Override
