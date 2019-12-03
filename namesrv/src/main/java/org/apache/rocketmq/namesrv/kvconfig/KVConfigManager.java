@@ -169,6 +169,9 @@ public class KVConfigManager {
         return null;
     }
 
+    /**
+     * 周期性打印
+     */
     public void printAllPeriodically() {
         try {
             this.lock.readLock().lockInterruptibly();
@@ -190,6 +193,9 @@ public class KVConfigManager {
                     }
                 }
             } finally {
+                /**
+                 * 释放锁
+                 */
                 this.lock.readLock().unlock();
             }
         } catch (InterruptedException e) {

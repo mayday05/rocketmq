@@ -45,9 +45,20 @@ import org.apache.rocketmq.common.protocol.route.TopicRouteData;
 import org.apache.rocketmq.common.sysflag.TopicSysFlag;
 import org.apache.rocketmq.remoting.common.RemotingUtil;
 
+/**
+ * 路由信息管理类
+ */
 public class RouteInfoManager {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
+
+    /**
+     * Broker channel 过期时间 2分钟
+     */
     private final static long BROKER_CHANNEL_EXPIRED_TIME = 1000 * 60 * 2;
+
+    /**
+     * 读写锁
+     */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final HashMap<String/* topic */, List<QueueData>> topicQueueTable;
     private final HashMap<String/* brokerName */, BrokerData> brokerAddrTable;
@@ -70,9 +81,17 @@ public class RouteInfoManager {
         return clusterInfoSerializeWrapper.encode();
     }
 
+    /**
+     * 删除topic
+     *
+     * @param topic
+     */
     public void deleteTopic(final String topic) {
         try {
             try {
+                /**
+                 * 获取写锁
+                 */
                 this.lock.writeLock().lockInterruptibly();
                 this.topicQueueTable.remove(topic);
             } finally {
@@ -83,10 +102,18 @@ public class RouteInfoManager {
         }
     }
 
+    /**
+     * 获取所有topic 列表
+     *
+     * @return
+     */
     public byte[] getAllTopicList() {
         TopicList topicList = new TopicList();
         try {
             try {
+                /**
+                 * 获取读锁
+                 */
                 this.lock.readLock().lockInterruptibly();
                 topicList.getTopicList().addAll(this.topicQueueTable.keySet());
             } finally {
@@ -99,6 +126,19 @@ public class RouteInfoManager {
         return topicList.encode();
     }
 
+    /**
+     * 注册Broker
+     *
+     * @param clusterName
+     * @param brokerAddr
+     * @param brokerName
+     * @param brokerId
+     * @param haServerAddr
+     * @param topicConfigWrapper
+     * @param filterServerList
+     * @param channel
+     * @return
+     */
     public RegisterBrokerResult registerBroker(
         final String clusterName,
         final String brokerAddr,
@@ -111,8 +151,14 @@ public class RouteInfoManager {
         RegisterBrokerResult result = new RegisterBrokerResult();
         try {
             try {
+                /**
+                 * 获取写锁
+                 */
                 this.lock.writeLock().lockInterruptibly();
 
+                /**
+                 * 获取集群对应的broker集合
+                 */
                 Set<String> brokerNames = this.clusterAddrTable.get(clusterName);
                 if (null == brokerNames) {
                     brokerNames = new HashSet<String>();
@@ -203,8 +249,15 @@ public class RouteInfoManager {
         }
     }
 
+    /**
+     * 创建并更新队列Queue数据
+     *
+     * @param brokerName
+     * @param topicConfig
+     */
     private void createAndUpdateQueueData(final String brokerName, final TopicConfig topicConfig) {
         QueueData queueData = new QueueData();
+
         queueData.setBrokerName(brokerName);
         queueData.setWriteQueueNums(topicConfig.getWriteQueueNums());
         queueData.setReadQueueNums(topicConfig.getReadQueueNums());
@@ -277,6 +330,14 @@ public class RouteInfoManager {
         return wipeTopicCnt;
     }
 
+    /**
+     * 解除注册
+     *
+     * @param clusterName
+     * @param brokerAddr
+     * @param brokerName
+     * @param brokerId
+     */
     public void unregisterBroker(
         final String clusterName,
         final String brokerAddr,
@@ -415,12 +476,21 @@ public class RouteInfoManager {
         return null;
     }
 
+    /**
+     * 扫描不在位的Broker
+     */
     public void scanNotActiveBroker() {
         Iterator<Entry<String, BrokerLiveInfo>> it = this.brokerLiveTable.entrySet().iterator();
         while (it.hasNext()) {
             Entry<String, BrokerLiveInfo> next = it.next();
             long last = next.getValue().getLastUpdateTimestamp();
+            /**
+             * 如果当前时间和上一次时间相差超过两分钟。
+             */
             if ((last + BROKER_CHANNEL_EXPIRED_TIME) < System.currentTimeMillis()) {
+                /**
+                 * 关闭channel，并删除该Broker
+                 */
                 RemotingUtil.closeChannel(next.getValue().getChannel());
                 it.remove();
                 log.warn("The broker channel expired, {} {}ms", next.getKey(), BROKER_CHANNEL_EXPIRED_TIME);
@@ -429,6 +499,12 @@ public class RouteInfoManager {
         }
     }
 
+    /**
+     * 响应关闭channel事件
+     *
+     * @param remoteAddr
+     * @param channel
+     */
     public void onChannelDestroy(String remoteAddr, Channel channel) {
         String brokerAddrFound = null;
         if (channel != null) {
@@ -550,6 +626,10 @@ public class RouteInfoManager {
         }
     }
 
+
+    /**
+     * 周期性打印
+     */
     public void printAllPeriodically() {
         try {
             try {
@@ -741,6 +821,9 @@ public class RouteInfoManager {
     }
 }
 
+/**
+ *
+ */
 class BrokerLiveInfo {
     private long lastUpdateTimestamp;
     private DataVersion dataVersion;
