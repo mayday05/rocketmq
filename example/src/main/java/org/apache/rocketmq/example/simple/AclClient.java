@@ -45,8 +45,14 @@ public class AclClient {
 
     private static final Map<MessageQueue, Long> OFFSE_TABLE = new HashMap<MessageQueue, Long>();
 
+    /**
+     * 密钥
+     */
     private static final String ACL_ACCESS_KEY = "RocketMQ";
 
+    /**
+     * 密钥
+     */
     private static final String ACL_SECRET_KEY = "1234567";
 
     public static void main(String[] args) throws MQClientException, InterruptedException {
@@ -55,18 +61,29 @@ public class AclClient {
         pullConsumer();
     }
 
+    /**
+     * 启动生产者
+     *
+     * @throws MQClientException
+     */
     public static void producer() throws MQClientException {
+        /**
+         * 构造生产者，传入钩子函数
+         */
         DefaultMQProducer producer = new DefaultMQProducer("ProducerGroupName", getAclRPCHook());
+        /**
+         * 设置NameSrv地址
+         */
         producer.setNamesrvAddr("127.0.0.1:9876");
         producer.start();
 
-        for (int i = 0; i < 128; i++)
+        for (int i = 0; i < 128; i++) {
             try {
                 {
                     Message msg = new Message("TopicTest",
-                        "TagA",
-                        "OrderID188",
-                        "Hello world".getBytes(RemotingHelper.DEFAULT_CHARSET));
+                            "TagA",
+                            "OrderID188",
+                            "Hello world".getBytes(RemotingHelper.DEFAULT_CHARSET));
                     SendResult sendResult = producer.send(msg);
                     System.out.printf("%s%n", sendResult);
                 }
@@ -74,7 +91,7 @@ public class AclClient {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
+        }
         producer.shutdown();
     }
 
@@ -111,7 +128,7 @@ public class AclClient {
             while (true) {
                 try {
                     PullResult pullResult =
-                        consumer.pullBlockIfNotFound(mq, null, getMessageQueueOffset(mq), 32);
+                            consumer.pullBlockIfNotFound(mq, null, getMessageQueueOffset(mq), 32);
                     System.out.printf("%s%n", pullResult);
                     putMessageQueueOffset(mq, pullResult.getNextBeginOffset());
                     printBody(pullResult);
@@ -163,6 +180,6 @@ public class AclClient {
     }
 
     static RPCHook getAclRPCHook() {
-        return new AclClientRPCHook(new SessionCredentials(ACL_ACCESS_KEY,ACL_SECRET_KEY));
+        return new AclClientRPCHook(new SessionCredentials(ACL_ACCESS_KEY, ACL_SECRET_KEY));
     }
 }

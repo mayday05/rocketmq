@@ -154,13 +154,18 @@ public class MappedFile extends ReferenceResource {
         this.fileName = fileName;
         this.fileSize = fileSize;
         this.file = new File(fileName);
+
+        //初始化的初始偏移量是文件名称
         this.fileFromOffset = Long.parseLong(this.file.getName());
         boolean ok = false;
 
         ensureDirOK(this.file.getParent());
 
         try {
+            //创建读写文件通道NIO
             this.fileChannel = new RandomAccessFile(this.file, "rw").getChannel();
+
+            //将文件映射到内存
             this.mappedByteBuffer = this.fileChannel.map(MapMode.READ_WRITE, 0, fileSize);
             TOTAL_MAPPED_VIRTUAL_MEMORY.addAndGet(fileSize);
             TOTAL_MAPPED_FILES.incrementAndGet();
@@ -202,10 +207,13 @@ public class MappedFile extends ReferenceResource {
         assert messageExt != null;
         assert cb != null;
 
+        //获取当前写的指针
         int currentPos = this.wrotePosition.get();
 
         if (currentPos < this.fileSize) {
+            //创建一个与MappedFile的共享内存区
             ByteBuffer byteBuffer = writeBuffer != null ? writeBuffer.slice() : this.mappedByteBuffer.slice();
+            //设置指针
             byteBuffer.position(currentPos);
             AppendMessageResult result = null;
             if (messageExt instanceof MessageExtBrokerInner) {
@@ -219,6 +227,7 @@ public class MappedFile extends ReferenceResource {
             this.storeTimestamp = result.getStoreTimestamp();
             return result;
         }
+        //当前写的指针大于文件的大小则抛出异常
         log.error("MappedFile.appendMessage return null, wrotePosition: {} fileSize: {}", currentPos, this.fileSize);
         return new AppendMessageResult(AppendMessageStatus.UNKNOWN_ERROR);
     }
@@ -301,8 +310,12 @@ public class MappedFile extends ReferenceResource {
             //no need to commit data to file channel, so just regard wrotePosition as committedPosition.
             return this.wrotePosition.get();
         }
+        //如果提交的数据不满commitLeastPages则不执行本次的提交，待下一次提交
         if (this.isAbleToCommit(commitLeastPages)) {
             if (this.hold()) {
+                /**
+                 * 核心方法commit0
+                 */
                 commit0(commitLeastPages);
                 this.release();
             } else {
@@ -319,17 +332,27 @@ public class MappedFile extends ReferenceResource {
         return this.committedPosition.get();
     }
 
+    /**
+     * commit0（）只是将缓存数据加入到fileChannel中
+     *
+     * @param commitLeastPages
+     */
     protected void commit0(final int commitLeastPages) {
         int writePos = this.wrotePosition.get();
         int lastCommittedPosition = this.committedPosition.get();
 
         if (writePos - this.committedPosition.get() > 0) {
             try {
+                //创建writeBuffer的共享缓存区
                 ByteBuffer byteBuffer = writeBuffer.slice();
+                //将指针回退到上一次提交的位置
                 byteBuffer.position(lastCommittedPosition);
+                //设置limit为writePos
                 byteBuffer.limit(writePos);
                 this.fileChannel.position(lastCommittedPosition);
+                //将committedPosition指针到wrotePosition的数据复制（写入）到fileChannel中
                 this.fileChannel.write(byteBuffer);
+                //更新committedPosition指针为writePos
                 this.committedPosition.set(writePos);
             } catch (Throwable e) {
                 log.error("Error occurred when commit data to FileChannel.", e);
@@ -486,12 +509,20 @@ public class MappedFile extends ReferenceResource {
 
     public void warmMappedFile(FlushDiskType type, int pages) {
         long beginTime = System.currentTimeMillis();
+        //创建一个新的字节缓冲区，其内容是此缓冲区内容的共享子序列
         ByteBuffer byteBuffer = this.mappedByteBuffer.slice();
+        //记录上一次刷盘的字节数
         int flush = 0;
         long time = System.currentTimeMillis();
         for (int i = 0, j = 0; i < this.fileSize; i += MappedFile.OS_PAGE_SIZE, j++) {
+            /**
+             * 预热操作，每个字节填充**(byte) 0
+             */
             byteBuffer.put(i, (byte) 0);
-            // force flush when flush disk type is sync
+
+            // 刷盘方式是同步策略时，进行刷盘操作
+            // 每修改pages个分页刷一次盘，相当于4096*4k = 16M  每16M刷一次盘，1G文件 1024M/16M = 64次
+            // force flush when flush diska type is sync
             if (type == FlushDiskType.SYNC_FLUSH) {
                 if ((i / OS_PAGE_SIZE) - (flush / OS_PAGE_SIZE) >= pages) {
                     flush = i;
@@ -499,6 +530,7 @@ public class MappedFile extends ReferenceResource {
                 }
             }
 
+            // 防止垃圾回收GC
             // prevent gc
             if (j % 1000 == 0) {
                 log.info("j={}, costTime={}", j, System.currentTimeMillis() - time);
@@ -515,6 +547,7 @@ public class MappedFile extends ReferenceResource {
         if (type == FlushDiskType.SYNC_FLUSH) {
             log.info("mapped file warm-up done, force to disk, mappedFile={}, costTime={}",
                 this.getFileName(), System.currentTimeMillis() - beginTime);
+            //刷盘，强制将此缓冲区内容的任何更改写入包含映射文件的存储设备
             mappedByteBuffer.force();
         }
         log.info("mapped file warm-up done. mappedFile={}, costTime={}", this.getFileName(),

@@ -145,10 +145,12 @@ public class MappedFileQueue {
     }
 
     public boolean load() {
+        // 消息存储路径
         File dir = new File(this.storePath);
         File[] files = dir.listFiles();
         if (files != null) {
             // ascending order
+            // 升序
             Arrays.sort(files);
             for (File file : files) {
 
@@ -160,10 +162,14 @@ public class MappedFileQueue {
 
                 try {
                     MappedFile mappedFile = new MappedFile(file.getPath(), mappedFileSize);
-
+                    //当前文件的写指针
                     mappedFile.setWrotePosition(this.mappedFileSize);
+                    //刷写到磁盘指针，该指针之前的数据持久化到磁盘中
                     mappedFile.setFlushedPosition(this.mappedFileSize);
+                    //当前文件的提交指针
                     mappedFile.setCommittedPosition(this.mappedFileSize);
+
+                    //添加到MappedFile文件集合中
                     this.mappedFiles.add(mappedFile);
                     log.info("load " + file.getPath() + " OK");
                 } catch (IOException e) {
@@ -192,27 +198,41 @@ public class MappedFileQueue {
     }
 
     public MappedFile getLastMappedFile(final long startOffset, boolean needCreate) {
+        //创建映射文件的起始偏移量
         long createOffset = -1;
+        /**
+         * 获取最后一个映射文件，如果为null或者写满则会执行创建逻辑
+         */
         MappedFile mappedFileLast = getLastMappedFile();
 
         if (mappedFileLast == null) {
+            //计算将要创建的映射文件的起始偏移量
+            //如果startOffset<=mappedFileSize则起始偏移量为0
+            //如果startOffset>mappedFileSize则起始偏移量为是mappedFileSize的倍数
             createOffset = startOffset - (startOffset % this.mappedFileSize);
         }
 
+        //映射文件满了，创建新的映射文件
         if (mappedFileLast != null && mappedFileLast.isFull()) {
             createOffset = mappedFileLast.getFileFromOffset() + this.mappedFileSize;
         }
 
+        // 创建的映射文件的偏移量等于最后一个映射文件的起始偏移量  + 映射文件的大小（commitLog文件大小）
         if (createOffset != -1 && needCreate) {
+            // 构造commitLog名称
             String nextFilePath = this.storePath + File.separator + UtilAll.offset2FileName(createOffset);
             String nextNextFilePath = this.storePath + File.separator
                 + UtilAll.offset2FileName(createOffset + this.mappedFileSize);
             MappedFile mappedFile = null;
 
+            // 优先通过allocateMappedFileService中方式构建映射文件，预分配方式，性能高
+            // 如果上述方式失败则通过new创建映射文件
             if (this.allocateMappedFileService != null) {
+                // 方式1-预分配方式
                 mappedFile = this.allocateMappedFileService.putRequestAndReturnMappedFile(nextFilePath,
                     nextNextFilePath, this.mappedFileSize);
             } else {
+                // 方式2
                 try {
                     mappedFile = new MappedFile(nextFilePath, this.mappedFileSize);
                 } catch (IOException e) {
@@ -422,12 +442,22 @@ public class MappedFileQueue {
         return deleteCount;
     }
 
+    /**
+     * mappedFileQueue.flush(0)立刻刷盘
+     *
+     * mappedFile.flush(0);保证立刻刷盘后面异步刷盘时也会调用mappedFile.flush()方法
+     *
+     * @param flushLeastPages
+     * @return
+     */
     public boolean flush(final int flushLeastPages) {
         boolean result = true;
         MappedFile mappedFile = this.findMappedFileByOffset(this.flushedWhere, this.flushedWhere == 0);
         if (mappedFile != null) {
             long tmpTimeStamp = mappedFile.getStoreTimestamp();
+            //刷盘，返回刷写到磁盘指针
             int offset = mappedFile.flush(flushLeastPages);
+            //计算当前的刷盘指针，之前的所有数据已经持久化到磁盘中
             long where = mappedFile.getFileFromOffset() + offset;
             result = where == this.flushedWhere;
             this.flushedWhere = where;
@@ -443,6 +473,9 @@ public class MappedFileQueue {
         boolean result = true;
         MappedFile mappedFile = this.findMappedFileByOffset(this.committedWhere, this.committedWhere == 0);
         if (mappedFile != null) {
+            /**
+             * commit方法
+             */
             int offset = mappedFile.commit(commitLeastPages);
             long where = mappedFile.getFileFromOffset() + offset;
             result = where == this.committedWhere;

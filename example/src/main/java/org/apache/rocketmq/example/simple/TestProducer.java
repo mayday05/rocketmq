@@ -29,18 +29,18 @@ public class TestProducer {
         DefaultMQProducer producer = new DefaultMQProducer("ProducerGroupName");
         producer.start();
 
-        for (int i = 0; i < 1; i++)
+        for (int i = 0; i < 1; i++) {
             try {
                 {
                     Message msg = new Message("TopicTest1",
-                        "TagA",
-                        "key113",
-                        "Hello world".getBytes(RemotingHelper.DEFAULT_CHARSET));
+                            "TagA",
+                            "key113",
+                            "Hello world".getBytes(RemotingHelper.DEFAULT_CHARSET));
                     SendResult sendResult = producer.send(msg);
                     System.out.printf("%s%n", sendResult);
 
                     QueryResult queryMessage =
-                        producer.queryMessage("TopicTest1", "key113", 10, 0, System.currentTimeMillis());
+                            producer.queryMessage("TopicTest1", "key113", 10, 0, System.currentTimeMillis());
                     for (MessageExt m : queryMessage.getMessageList()) {
                         System.out.printf("%s%n", m);
                     }
@@ -49,6 +49,7 @@ public class TestProducer {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
         producer.shutdown();
     }
 }

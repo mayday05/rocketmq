@@ -176,10 +176,10 @@ public class DefaultMessageStore implements MessageStore {
                 result = result && this.scheduleMessageService.load();
             }
 
-            // load Commit Log
+            // load Commit Log--加载commitLog文件（进一步调用mappedFileQueue.load方法）
             result = result && this.commitLog.load();
 
-            // load Consume Queue
+            // load Consume Queue---加载消息队列文件
             result = result && this.loadConsumeQueue();
 
             if (result) {
