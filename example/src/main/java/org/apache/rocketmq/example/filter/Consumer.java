@@ -19,6 +19,7 @@ package org.apache.rocketmq.example.filter;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
 import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;
 import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
@@ -31,19 +32,22 @@ public class Consumer {
 
     public static void main(String[] args) throws InterruptedException, MQClientException, IOException {
         DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("ConsumerGroupNamecc4");
+        consumer.setNamesrvAddr("192.168.180.11:39876");
 
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         File classFile = new File(classLoader.getResource("MessageFilterImpl.java").getFile());
 
         String filterCode = MixAll.file2String(classFile);
-        consumer.subscribe("TopicTest", "org.apache.rocketmq.example.filter.MessageFilterImpl",
-            filterCode);
+
+        // 订阅，并指定过滤类名和类路径
+        consumer.subscribe("TopicFilter7", "org.apache.rocketmq.example.filter.MessageFilterImpl",
+                filterCode);
 
         consumer.registerMessageListener(new MessageListenerConcurrently() {
 
             @Override
             public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> msgs,
-                ConsumeConcurrentlyContext context) {
+                                                            ConsumeConcurrentlyContext context) {
                 System.out.printf("%s Receive New Messages: %s %n", Thread.currentThread().getName(), msgs);
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
             }

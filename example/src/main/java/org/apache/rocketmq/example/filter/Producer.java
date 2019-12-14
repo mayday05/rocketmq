@@ -23,17 +23,22 @@ import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 
 public class Producer {
+
     public static void main(String[] args) throws MQClientException, InterruptedException {
         DefaultMQProducer producer = new DefaultMQProducer("ProducerGroupName");
+        producer.setNamesrvAddr("192.168.180.11:39876");
+
         producer.start();
 
         try {
             for (int i = 0; i < 6000000; i++) {
-                Message msg = new Message("TopicFilter7",
-                    "TagA",
-                    "OrderID001",
-                    "Hello world".getBytes(RemotingHelper.DEFAULT_CHARSET));
 
+                // 定义消息 主题、Tag、Key、消息体
+                Message msg = new Message("TopicFilter7",
+                        "TagA",
+                        "OrderID001",
+                        "Hello world".getBytes(RemotingHelper.DEFAULT_CHARSET));
+                // 设置用户自定义属性
                 msg.putUserProperty("SequenceId", String.valueOf(i));
                 SendResult sendResult = producer.send(msg);
                 System.out.printf("%s%n", sendResult);

@@ -18,6 +18,7 @@ package org.apache.rocketmq.example.ordermessage;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
 import org.apache.rocketmq.client.consumer.listener.ConsumeOrderlyContext;
 import org.apache.rocketmq.client.consumer.listener.ConsumeOrderlyStatus;
@@ -29,20 +30,39 @@ import org.apache.rocketmq.common.message.MessageExt;
 public class Consumer {
 
     public static void main(String[] args) throws MQClientException {
-        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("please_rename_unique_group_name_3");
+        /**
+         * 定义消费组
+         */
+        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("consumer_order");
+        consumer.setNamesrvAddr("192.168.180.11:39876");
 
+        /**
+         * 消费顺序
+         */
         consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);
 
-        consumer.subscribe("TopicTest", "TagA || TagC || TagD");
+        /**
+         * 订阅主题，tag匹配规则
+         */
+        consumer.subscribe("TopicTest_Order", "TagA || TagC || TagD");
 
+        /**
+         * 注册消息监听器，消息监听类型为MessageListenerOrderly
+         *
+         *
+         */
         consumer.registerMessageListener(new MessageListenerOrderly() {
+            // 定义消费个数
             AtomicLong consumeTimes = new AtomicLong(0);
 
             @Override
             public ConsumeOrderlyStatus consumeMessage(List<MessageExt> msgs, ConsumeOrderlyContext context) {
+                // 关闭自动提交
                 context.setAutoCommit(false);
+
                 System.out.printf("%s Receive New Messages: %s %n", Thread.currentThread().getName(), msgs);
                 this.consumeTimes.incrementAndGet();
+
                 if ((this.consumeTimes.get() % 2) == 0) {
                     return ConsumeOrderlyStatus.SUCCESS;
                 } else if ((this.consumeTimes.get() % 3) == 0) {

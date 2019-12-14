@@ -40,7 +40,9 @@ import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 
-
+/**
+ * 增加密钥的生产、消费
+ */
 public class AclClient {
 
     private static final Map<MessageQueue, Long> OFFSE_TABLE = new HashMap<MessageQueue, Long>();
@@ -56,6 +58,7 @@ public class AclClient {
     private static final String ACL_SECRET_KEY = "1234567";
 
     public static void main(String[] args) throws MQClientException, InterruptedException {
+        // 分别启动生产者、PUSH消费者、PULL消费者
         producer();
         pushConsumer();
         pullConsumer();
@@ -74,7 +77,7 @@ public class AclClient {
         /**
          * 设置NameSrv地址
          */
-        producer.setNamesrvAddr("127.0.0.1:9876");
+        producer.setNamesrvAddr("192.168.180.11:39876");
         producer.start();
 
         for (int i = 0; i < 128; i++) {
@@ -95,14 +98,25 @@ public class AclClient {
         producer.shutdown();
     }
 
+    /**
+     * Push类型消费者
+     *
+     * @throws MQClientException
+     */
     public static void pushConsumer() throws MQClientException {
 
-        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("please_rename_unique_group_name_5", getAclRPCHook(), new AllocateMessageQueueAveragely());
-        consumer.setNamesrvAddr("127.0.0.1:9876");
+        /**
+         * 初始化Push类型消费者，传入指定的消费者名称、RPC钩子函数、分配策略
+         */
+        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("please_rename_unique_group_name_5",
+                getAclRPCHook(), new AllocateMessageQueueAveragely());
+        consumer.setNamesrvAddr("192.168.180.11:39876");
         consumer.subscribe("TopicTest", "*");
         consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);
         // Wrong time format 2017_0422_221800
-        consumer.setConsumeTimestamp("20180422221800");
+        consumer.setConsumeTimestamp("20191214154000");
+
+        // 注册消息监听器
         consumer.registerMessageListener(new MessageListenerConcurrently() {
 
             @Override
@@ -112,26 +126,49 @@ public class AclClient {
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
             }
         });
+
+        // 启动消费者
         consumer.start();
         System.out.printf("Consumer Started.%n");
     }
 
+    /**
+     * Pull类型消费者
+     *
+     * @throws MQClientException
+     */
     public static void pullConsumer() throws MQClientException {
-        DefaultMQPullConsumer consumer = new DefaultMQPullConsumer("please_rename_unique_group_name_6", getAclRPCHook());
-        consumer.setNamesrvAddr("127.0.0.1:9876");
+        /**
+         * 初始化pull类型消费者
+         */
+        DefaultMQPullConsumer consumer = new DefaultMQPullConsumer("please_rename_unique_group_name_6",
+                getAclRPCHook());
+        consumer.setNamesrvAddr("192.168.180.11:39876");
         consumer.start();
 
+        /**
+         * 拉起订阅队列
+         */
         Set<MessageQueue> mqs = consumer.fetchSubscribeMessageQueues("TopicTest");
         for (MessageQueue mq : mqs) {
             System.out.printf("Consume from the queue: %s%n", mq);
+            // label用于控制多层循环的退出或者continue
             SINGLE_MQ:
             while (true) {
                 try {
+                    /**
+                     * 需要消费端维护OffSet
+                     */
                     PullResult pullResult =
                             consumer.pullBlockIfNotFound(mq, null, getMessageQueueOffset(mq), 32);
                     System.out.printf("%s%n", pullResult);
+
+                    // 保存下一个offSet
                     putMessageQueueOffset(mq, pullResult.getNextBeginOffset());
+
+                    // 打印消息体
                     printBody(pullResult);
+                    // 还需要处理拉取结果
                     switch (pullResult.getPullStatus()) {
                         case FOUND:
                             break;
@@ -167,11 +204,17 @@ public class AclClient {
         }
     }
 
+    /**
+     * 获取消息队列当前的offset
+     *
+     * @param mq
+     * @return
+     */
     private static long getMessageQueueOffset(MessageQueue mq) {
         Long offset = OFFSE_TABLE.get(mq);
-        if (offset != null)
+        if (offset != null) {
             return offset;
-
+        }
         return 0;
     }
 
